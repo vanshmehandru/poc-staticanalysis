@@ -1,4 +1,4 @@
-# Offline Static Malware Analysis System
+# Offline Static Malware Analysis System (OMAS)
 
 A completely modular, offline, static analysis engine for triage of Windows PE files (`.exe`, `.dll`).
 
@@ -13,7 +13,7 @@ A completely modular, offline, static analysis engine for triage of Windows PE f
 - **YARA Engine Integration**: Recursively loads `.yar` rules from `yara_rules/` and scans samples for packers, crypto constants, ransomware, and anti-debugging behaviors.
 - **Manifest Extraction**: Parses embedded XML manifests to find requested execution levels.
 - **Intelligent Risk Engine**: Aggregates all findings into a unified intelligence schema, applies a point-based severity score (0-100), and issues a final verdict (BENIGN, LOW RISK, MEDIUM RISK, HIGH RISK, CRITICAL RISK) with corresponding incident response recommendations.
-- **PDF Reporting**: Generates a professional 15-section PDF report detailing the execution summary, key findings, and raw analyzer outputs using `ReportLab`.
+- **PDF Reporting & Embedded Metadata**: Generates a professional 15-section PDF report detailing the execution summary, key findings, and raw analyzer outputs using `ReportLab`. Forensic metadata is securely serialized and embedded inside the PDF file's native `Subject` metadata field (no separate sidecar `.json` files are required, making the output report fully self-contained).
 
 ## Installation
 
@@ -27,13 +27,30 @@ It also requires `libmagic`. On Windows, the requirements file handles installin
 
 ## Usage
 
-Run the `main.py` entrypoint located within the `malware_analyzer` directory and supply it with a PE file:
+### 1. Graphical User Interface (GUI)
+Launch the professional Qt/PySide6 forensic dashboard:
+```bash
+python malware_analyzer/gui/app.py
+```
+From the GUI, you can:
+- Perform static analysis of binaries.
+- Monitor analysis status dynamically.
+- View a centralized Reports ledger.
+- Filter historical reports by date range and verdict.
+- Open PDF reports directly from the table.
 
+### 2. Command Line Interface (CLI)
+Run the headless static analysis engine:
 ```bash
 python malware_analyzer/main.py "C:\Path\To\Sample.exe"
 ```
 
 The system will generate console output showing the execution status of the analyzers and save a detailed PDF report inside the `reports/` directory.
+
+## Offline & Air-Gapped Readiness
+This system has been built from the ground up for **fully offline/air-gapped forensics workstations**:
+- **Zero Cloud Calls**: No network connectivity or external APIs are used during static analysis.
+- **Self-Contained Portability**: You can compress the workspace folder (`.zip`), move it via hard disk/USB drive to a completely disconnected/isolated analysis machine, install dependencies locally (using python wheels or offline pip packages), and it will execute perfectly.
 
 ## Architecture
 
@@ -43,7 +60,8 @@ malware_analyzer/
 ├── analyzers/         # Independent analysis modules
 ├── intelligence/      # Risk engine and aggregator
 ├── reporting/         # ReportLab PDF generation
-└── config/            # System settings
+├── config/            # System settings
+└── gui/               # PySide6 Forensic GUI Views & Controllers
 yara_rules/            # Drop your custom .yar rules here
-reports/               # Generated PDFs appear here
+reports/               # Generated PDF reports appear here
 ```
