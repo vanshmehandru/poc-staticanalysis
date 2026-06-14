@@ -26,3 +26,8 @@ Thumbs.db
 # Any temporary test executables
 *.exe
 *.dll
+
+# Local Configuration
+settings.json
+config/settings.json
+malware_analyzer/config/settings.json

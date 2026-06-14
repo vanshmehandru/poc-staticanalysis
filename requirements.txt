@@ -4,3 +4,4 @@ yara-python
 reportlab
 python-magic-bin; sys_platform == 'win32'
 python-magic; sys_platform != 'win32'
+PySide6
