@@ -2,6 +2,6 @@ pefile
 lief
 yara-python
 reportlab
-python-magic-bin; sys_platform == 'win32'
-python-magic; sys_platform != 'win32'
+python-magic-bin; platform_system == "Windows"
+python-magic; platform_system != "Windows"
 PySide6

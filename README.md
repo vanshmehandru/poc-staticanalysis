@@ -17,13 +17,34 @@ A completely modular, offline, static analysis engine for triage of Windows PE f
 
 ## Installation
 
-This system requires Python 3.12+.
-It also requires `libmagic`. On Windows, the requirements file handles installing `python-magic-bin`.
+This project is set up for **Python 3.14.6**.
+It also requires `libmagic`. On Windows, the dependency file uses `python-magic-bin`, which includes the required binaries.
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Offline installation summary
+
+For a fully air-gapped system, use two machines:
+
+1. **Online machine**: build a local wheel folder named `wheelhouse`.
+2. **Offline machine**: create a virtual environment and install only from that local wheel folder.
+
+If you need to rebuild the wheel folder on the online machine, install Microsoft Visual C++ Build Tools first. That is required because `yara-python` is built from source for Python 3.14.6.
+
+Basic offline install flow:
+
+```powershell
+py -3.14 -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --no-index --find-links=.\wheelhouse -r requirements.txt
+```
+
+If you are building the wheelhouse on the online machine, use:
+
+```powershell
+py -3.14 -m venv buildenv
+.\buildenv\Scripts\Activate.ps1
+python -m pip install -U pip setuptools wheel build
+python -m pip wheel -r requirements.txt -w wheelhouse
+```
 
 ## Usage
 
@@ -50,7 +71,8 @@ The system will generate console output showing the execution status of the anal
 ## Offline & Air-Gapped Readiness
 This system has been built from the ground up for **fully offline/air-gapped forensics workstations**:
 - **Zero Cloud Calls**: No network connectivity or external APIs are used during static analysis.
-- **Self-Contained Portability**: You can compress the workspace folder (`.zip`), move it via hard disk/USB drive to a completely disconnected/isolated analysis machine, install dependencies locally (using python wheels or offline pip packages), and it will execute perfectly.
+- **Self-Contained Portability**: You can compress the workspace folder (`.zip`), move it via hard disk/USB drive to a disconnected analysis machine, and install everything from a local wheel folder.
+- **Python Version**: The offline machine should use Python 3.14.6 so the wheel files match the interpreter.
 
 ## Architecture
 

@@ -31,3 +31,5 @@ Thumbs.db
 settings.json
 config/settings.json
 malware_analyzer/config/settings.json
+
+wheelhouse/

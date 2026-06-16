@@ -1,108 +1,158 @@
 # OMAS Setup & Offline Deployment Walkthrough
 
-This document provides step-by-step instructions on how to set up, install, and run the Offline Static Malware Analysis System (OMAS) on both online (connected) and completely offline (air-gapped) systems.
+This guide explains how to set up OMAS in a very simple way. It is written for a beginner who may only know how to copy folders and run a few PowerShell commands.
+
+The setup uses **two computers**:
+
+- **Online computer**: the machine that has internet access. You use it to download or build the Python package files.
+- **Offline computer**: the air-gapped machine with no internet. You use it to run OMAS.
+
+OMAS is designed for **Python 3.14.6** on Windows.
 
 ---
 
-## Prerequisites
+## What You Need
 
-Before running the application, ensure the target system meets the following requirements:
+Before starting, make sure you have these items:
 
-### 1. System Requirements
-- **Python**: Version 3.12 or higher.
-- **Operating System**: Windows (tested on Windows 10/11), macOS, or Linux.
-- **pip**: Python Package Installer (usually bundled with Python).
+- Python **3.14.6** on both computers.
+- The OMAS project folder.
+- A USB drive or other safe transfer method.
+- On the online computer only: **Microsoft Visual C++ Build Tools** with **Desktop development with C++** selected.
 
-### 2. Dependency Notes
-- **`libmagic`**: This project uses `python-magic` to inspect file signatures.
-  - **Windows**: The `requirements.txt` installs `python-magic-bin` which includes the compiled binaries.
-  - **macOS**: May require installing `libmagic` using Homebrew: `brew install libmagic`
-  - **Linux**: May require installing `libmagic` using the system package manager: `sudo apt-get install libmagic1` (Debian/Ubuntu) or `sudo dnf install file-devel` (RedHat/Fedora).
+Why the Build Tools are needed: one package, `yara-python`, must be compiled on Python 3.14.6 because a ready-made wheel is not available.
 
 ---
 
-## Online Setup: Cloning and Running
+## Part 1: Prepare the Package Files on the Online Computer
 
-If the target workstation has access to the internet, follow these steps to clone and run the project:
+### Step 1: Open the project folder
+Open PowerShell and go to the OMAS folder.
 
-### Step 1: Clone the Repository
-Open a terminal (e.g., PowerShell on Windows, Terminal on macOS/Linux) and run:
-```bash
-git clone https://github.com/vanshmehandru/poc-staticanalysis.git
-cd poc-staticanalysis
+```powershell
+cd C:\Users\HP\OneDrive\Desktop\CyberSec\exe-analysis
 ```
 
-### Step 2: Install Dependencies
-It is recommended to use a virtual environment to avoid conflicts with system-wide python packages:
-```bash
-# Create a virtual environment
-python -m venv venv
+### Step 2: Create a build virtual environment
+A virtual environment is like a clean box for Python packages. It keeps this project separate from other Python projects.
 
-# Activate the virtual environment
-# On Windows (PowerShell):
+```powershell
+py -3.14 -m venv buildenv
+.\buildenv\Scripts\Activate.ps1
+```
+
+### Step 3: Install the tools needed to build packages
+
+```powershell
+python -m pip install -U pip setuptools wheel build
+```
+
+### Step 4: Build the offline wheel folder
+This command downloads or builds all package files into a folder called `wheelhouse`.
+
+```powershell
+python -m pip wheel -r requirements.txt -w wheelhouse
+```
+
+When this finishes successfully, you should see a `wheelhouse` folder in the project directory.
+
+### Step 5: Check the result
+Open the `wheelhouse` folder and make sure it contains wheel files such as:
+
+- `pefile`
+- `lief`
+- `reportlab`
+- `python-magic-bin`
+- `PySide6`
+- `pillow`
+- `charset_normalizer`
+- `yara-python` or `yara_python`
+
+If `yara-python` is missing, the build did not finish correctly and you must fix that before moving to the offline computer.
+
+---
+
+## Part 2: Copy Everything to the Offline Computer
+
+### Step 6: Copy the project folder
+Copy the whole OMAS project folder to a USB drive or another approved transfer medium.
+
+Make sure the copied folder includes:
+
+- `wheelhouse`
+- `requirements.txt`
+- the `malware_analyzer` folder
+- the `yara_rules` folder
+- the `docs` folder
+
+### Step 7: Move it to the offline computer
+Copy the transferred folder onto the air-gapped machine.
+
+---
+
+## Part 3: Install OMAS on the Offline Computer
+
+### Step 8: Open the project folder on the offline computer
+Open PowerShell and move into the copied OMAS folder.
+
+```powershell
+cd C:\Path\To\OMAS
+```
+
+### Step 9: Create a runtime virtual environment
+This is the environment you will actually use to run OMAS.
+
+```powershell
+py -3.14 -m venv venv
 .\venv\Scripts\Activate.ps1
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install the required packages
-pip install -r requirements.txt
 ```
 
-### Step 3: Run the Program
+### Step 10: Install the packages from the local wheel folder only
+This step tells pip to stay offline and use only the files inside `wheelhouse`.
 
-#### Option A: Command Line Interface (CLI)
-To run a quick static analysis of a executable file:
-```bash
+```powershell
+python -m pip install --no-index --find-links=.\wheelhouse -r requirements.txt
+```
+
+If this command finishes without errors, the installation is complete.
+
+---
+
+## Part 4: Run OMAS
+
+### Step 11: Run the command-line version
+Use this if you want to analyze a file directly:
+
+```powershell
 python malware_analyzer/main.py "C:\Path\To\Sample.exe"
 ```
-*The engine will display findings in the console and automatically save a PDF report inside the `reports/` folder.*
 
-#### Option B: Graphical User Interface (GUI)
-To launch the interactive forensic dashboard:
-```bash
+### Step 12: Run the GUI version
+Use this if you want to open the desktop interface:
+
+```powershell
 python malware_analyzer/gui/app.py
 ```
 
 ---
 
-## Offline / Air-Gapped Setup (Sneakernet Deployment)
+## Simple Troubleshooting
 
-In a secure security operations center (SOC) or malware lab, the analysis machine is often completely disconnected from the internet. Follow this guide to transfer and install the application offline.
+If something goes wrong, check these common problems:
 
-### Step 1: Download Dependencies (On an Online Machine)
-Before transferring files to the offline system, you must download the offline package installers (wheel files) for all dependencies.
+- **Python version mismatch**: make sure the machine is using Python 3.14.6.
+- **Missing wheel files**: confirm the `wheelhouse` folder contains all package files.
+- **`yara-python` build error**: install Microsoft Visual C++ Build Tools on the online computer and rebuild the wheel folder.
+- **`pip` tries to use the internet**: make sure you used `--no-index --find-links=.\wheelhouse`.
 
-1. Create a temporary folder to store the packages:
-   ```bash
-   mkdir dependencies
-   ```
-2. Download all the required wheels matching your target offline machine's platform (e.g., Windows x64):
-   ```bash
-   pip download -r requirements.txt -d ./dependencies --only-binary=:all: --platform win_amd64 --python-version 312
-   ```
-   *(Adjust `--platform` and `--python-version` flags to match your target offline operating system and installed Python version).*
+---
 
-### Step 2: Compress and Transfer
-1. Compress the repository folder (including the newly created `dependencies/` folder) into a `.zip` or `.tar.gz` archive.
-2. Transfer the archive to the offline system via authorized offline media (e.g., USB drive, optical media, or secure internal file transfer).
+## Short Version
 
-### Step 3: Extract and Install (On the Offline Machine)
-1. Extract the transferred archive to your directory of choice.
-2. Open a terminal, navigate to the extracted directory, and activate your virtual environment if you wish to use one.
-3. Install the packages locally without using the internet:
-   ```bash
-   pip install --no-index --find-links=./dependencies -r requirements.txt
-   ```
-   *This tells `pip` to look only in the local `./dependencies` directory for the installation packages and to ignore internet indexes like PyPI.*
+If you only want the shortest possible summary:
 
-### Step 4: Run the Program
-Now, verify the installation by running the application offline:
-
-```bash
-# To run CLI:
-python malware_analyzer/main.py "C:\Path\To\Sample.exe"
-
-# To run GUI:
-python malware_analyzer/gui/app.py
-```
-Since the app executes entirely locally, it will function with 100% features and zero network dependencies.
+1. Use the online computer to build `wheelhouse`.
+2. Copy the whole project folder to the offline computer.
+3. Create `venv` on the offline computer.
+4. Install with `pip install --no-index --find-links=.\wheelhouse -r requirements.txt`.
+5. Run `python malware_analyzer/gui/app.py` or `python malware_analyzer/main.py`.
